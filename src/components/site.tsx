@@ -1,110 +1,135 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Avatar, Head, Webb } from "./caro";
-import { Sky } from "./CaroRuntime";
+import { Avatar } from "./caro";
 import { SubscribeForm } from "./SubscribeForm";
 import { SiteMenu } from "./SiteMenu";
+import { NavLinks } from "./NavLinks";
 import { artUrl } from "@/lib/markdown";
 import { sections } from "@/lib/posts";
+import { getSettings } from "@/lib/settings";
 
-export function SiteHeader({ label, handle }: { label: string; handle: string }) {
+const plural = (n: number) => `${n} ${n === 1 ? "issue" : "issues"}`;
+
+export function SiteHeader() {
+  const s = getSettings();
+  const secs = sections();
+  const nav = [{ href: "/", label: "Latest" }, ...secs.slice(0, 4).map((x) => ({ href: `/sections/${x.slug}`, label: x.name })), { href: "/issues", label: "Archive" }, { href: "/about", label: "About" }];
   return (
-    <header className="ck-header">
-      <div className="ck-header__bar">
-        <SiteMenu
-          avatar={<Avatar />}
-          handle={handle}
-          main={[
-            { href: "/", label: "Home" },
-            { href: "/issues", label: "Every issue" },
-            { href: "/topics", label: "Topics" },
-            { href: "/about", label: "About" },
-          ]}
-          sections={sections().map((x) => ({ href: `/sections/${x.slug}`, label: x.name, note: `${x.count} ${x.count === 1 ? "issue" : "issues"}` }))}
-        />
-        <div className="ck-series">
-          <Webb />
-          <span className="meta ck-meta-text">{label}</span>
+    <header className="nl-header">
+      <div className="nl-wrap nl-header__bar">
+        <Link className="nl-brand" href="/" aria-label={`${s.handle}, home`}>
+          <Avatar />
+          <span className="nl-brand__name">{s.handle}</span>
+        </Link>
+        <NavLinks items={nav} />
+        <div className="nl-header__end">
+          <Link className="nl-icon-btn" href="/issues#search" aria-label="Search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+              <circle cx="11" cy="11" r="6.5" />
+              <path d="M16 16l4.5 4.5" />
+            </svg>
+          </Link>
+          <Link className="nl-btn" href="/subscribe">
+            Subscribe
+          </Link>
+          <SiteMenu
+            main={[
+              { href: "/", label: "Latest" },
+              { href: "/issues", label: "Archive" },
+              { href: "/topics", label: "Topics" },
+              { href: "/about", label: "About" },
+              { href: "/subscribe", label: "Subscribe" },
+            ]}
+            sections={secs.map((x) => ({ href: `/sections/${x.slug}`, label: x.name, note: plural(x.count) }))}
+          />
         </div>
       </div>
     </header>
   );
 }
 
-const NAV = [
-  { href: "/", label: "Home" },
-  { href: "/issues", label: "Issues" },
-  { href: "/topics", label: "Topics" },
-  { href: "/about", label: "About" },
-  { href: "/feed.xml", label: "RSS" },
-];
-
-export function SiteFooter({ handle }: { handle: string }) {
+export function SiteFooter() {
+  const s = getSettings();
+  const secs = sections();
   return (
-    <footer className="ck-site-footer">
-      <div className="ck-container">
-        <div className="ck-footer">
-          <nav aria-label="Site" className="ck-foot-nav">
-            {NAV.map((n) => (
-              <Link key={n.href} href={n.href} className="meta ck-foot-link" prefetch={n.href === "/feed.xml" ? false : undefined}>
-                {n.label}
-              </Link>
-            ))}
+    <footer className="nl-footer">
+      <div className="nl-wrap">
+        <div className="nl-footer__grid">
+          <div className="nl-footer__brand">
+            <Link className="nl-brand" href="/">
+              <Avatar />
+              <span>{s.handle}</span>
+            </Link>
+            <p className="nl-footer__about">{s.siteDescription}</p>
+          </div>
+          <nav aria-label="Sections">
+            <h2>Sections</h2>
+            <ul>
+              {secs.map((x) => (
+                <li key={x.slug}>
+                  <Link href={`/sections/${x.slug}`}>{x.name}</Link>
+                </li>
+              ))}
+              <li>
+                <Link href="/topics">All topics</Link>
+              </li>
+            </ul>
           </nav>
-          <p className="fine ck-foot-fine">
-            {handle} · {new Date().getUTCFullYear()}
-          </p>
+          <nav aria-label="Site">
+            <h2>Site</h2>
+            <ul>
+              <li><Link href="/issues">Archive</Link></li>
+              <li><Link href="/about">About</Link></li>
+              <li><Link href="/subscribe">Subscribe</Link></li>
+              <li><Link href="/feed.xml" prefetch={false}>RSS feed</Link></li>
+            </ul>
+          </nav>
+        </div>
+        <div className="nl-footer__base">
+          <span>
+            © {new Date().getUTCFullYear()} {s.handle}
+          </span>
+          <span>Plain words about AI. Every week.</span>
         </div>
       </div>
     </footer>
   );
 }
 
-/** The one ask, last on every page. */
-export function NewsletterClose({ palette = "lagoon" }: { palette?: string }) {
+/** The newsletter ask as a compact box: used at the end of articles and listing pages. */
+export function SubscribeBox({ palette = "lagoon", title = "Stay ahead of AI." }: { palette?: string; title?: string }) {
   return (
-    <section className="ck-section ck-section--cta" id="newsletter">
-      <div className="ck-container ck-stack ck-stack--center" data-ck-reveal>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img className="ck-art ck-art-float ck-cta-art" src={artUrl("envelope", palette)} alt="" width={420} height={211} />
-        <Head first="Stay ahead" second="of AI." size="display" />
-        <p className="lead ck-lead ck-fade">AI news, tech, prompts and links to skills. In your inbox every week.</p>
-        <div className="ck-fade ck-cta-form">
-          <SubscribeForm />
-        </div>
+    <section className={`nl-cta pal-${palette}`} id="newsletter" aria-labelledby="cta-title">
+      <div>
+        <h2 className="nl-h2" id="cta-title">
+          {title}
+        </h2>
+        <p className="nl-lead">AI news, tech, prompts and links to skills. In your inbox every week.</p>
+        <SubscribeForm id="cta" />
       </div>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img className="nl-cta__art" src={artUrl("envelope", palette)} alt="" width={220} height={111} loading="lazy" decoding="async" />
     </section>
   );
 }
 
-/** Wraps a public page: palette, sky, header, the page, the newsletter close and the footer. */
-export function PageShell({
-  palette = "lagoon",
-  hero = "sky",
-  label,
-  handle,
-  children,
-  close = true,
-}: {
-  palette?: string;
-  hero?: string;
-  label: string;
-  handle: string;
-  children: ReactNode;
-  close?: boolean;
-}) {
+/** Wraps a public page: header, the page, an optional subscribe box and the footer. */
+export function PageShell({ palette = "lagoon", hero = "sky", children, cta = true }: { palette?: string; hero?: string; children: ReactNode; cta?: boolean }) {
   return (
-    <div className={`ck-root ck-shell pal-${palette} hero-${hero}`}>
-      <Sky palette={palette} />
+    <div className={`ck-root nl pal-${palette} hero-${hero}`}>
       <a className="ck-skip" href="#main">
         Skip to content
       </a>
-      <SiteHeader label={label} handle={handle} />
-      <main id="main" className="ck-page">
+      <SiteHeader />
+      <main id="main">
         {children}
-        {close ? <NewsletterClose palette={palette} /> : null}
+        {cta ? (
+          <div className="nl-wrap nl-block">
+            <SubscribeBox palette={palette} />
+          </div>
+        ) : null}
       </main>
-      <SiteFooter handle={handle} />
+      <SiteFooter />
     </div>
   );
 }

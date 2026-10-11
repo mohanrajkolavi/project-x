@@ -2,15 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 export type MenuLink = { href: string; label: string; note?: string };
 
-/**
- * Site navigation lives behind the avatar, as the design system asks.
- * The avatar opens a full-screen menu on the page surface: sections, pages and search.
- */
-export function SiteMenu({ avatar, handle, main, sections }: { avatar: ReactNode; handle: string; main: MenuLink[]; sections: MenuLink[] }) {
+/** The full menu: search, pages and every section. The only nav on phones. */
+export function SiteMenu({ main, sections }: { main: MenuLink[]; sections: MenuLink[] }) {
   const [open, setOpen] = useState(false);
   const path = usePathname();
   const panel = useRef<HTMLDivElement>(null);
@@ -50,14 +48,13 @@ export function SiteMenu({ avatar, handle, main, sections }: { avatar: ReactNode
 
   return (
     <>
-      <button ref={button} type="button" className="ck-me ck-menu-btn" aria-expanded={open} aria-controls="site-menu" aria-label={open ? "Close menu" : `Menu · ${handle}`} onClick={() => setOpen((o) => !o)}>
-        {avatar}
-        <span className="meta ck-meta-text">{handle}</span>
-        <span className="ck-menu-btn__hint meta" aria-hidden="true">
-          {open ? "Close" : "Menu"}
-        </span>
+      <button ref={button} type="button" className="nl-icon-btn nl-menu-btn" aria-expanded={open} aria-controls="site-menu" aria-label={open ? "Close menu" : "Open menu"} onClick={() => setOpen((o) => !o)}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" aria-hidden="true">
+          {open ? <path d="M6 6l12 12M18 6L6 18" /> : <path d="M4 7h16M4 12h16M4 17h16" />}
+        </svg>
       </button>
-      {open ? (
+      {open
+        ? createPortal(
         <div className="ck-menu" id="site-menu" ref={panel} role="dialog" aria-modal="true" aria-label="Site menu">
           <div className="ck-menu__inner">
             <form className="ck-search ck-menu__search" role="search" action="/issues">
@@ -69,11 +66,11 @@ export function SiteMenu({ avatar, handle, main, sections }: { avatar: ReactNode
             </form>
             <div className="ck-menu__cols">
               <nav aria-label="Pages">
-                <p className="kicker ck-kicker">Read</p>
+                <p className="ck-kicker">Read</p>
                 <ul className="ck-menu__list">
                   {main.map((l) => (
                     <li key={l.href}>
-                      <Link href={l.href} className="title ck-menu__link" aria-current={current(l.href) ? "page" : undefined}>
+                      <Link href={l.href} className="ck-menu__link" aria-current={current(l.href) ? "page" : undefined}>
                         {l.label}
                       </Link>
                     </li>
@@ -82,7 +79,7 @@ export function SiteMenu({ avatar, handle, main, sections }: { avatar: ReactNode
               </nav>
               {sections.length ? (
                 <nav aria-label="Sections">
-                  <p className="kicker ck-kicker">Sections</p>
+                  <p className="ck-kicker">Sections</p>
                   <ul className="ck-menu__list ck-menu__list--small">
                     {sections.map((l) => (
                       <li key={l.href}>
@@ -98,7 +95,8 @@ export function SiteMenu({ avatar, handle, main, sections }: { avatar: ReactNode
             </div>
           </div>
         </div>
-      ) : null}
+      , document.body)
+        : null}
     </>
   );
 }

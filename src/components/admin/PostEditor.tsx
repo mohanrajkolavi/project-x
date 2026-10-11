@@ -4,7 +4,6 @@ import Link from "next/link";
 import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { previewBody, removePost, savePost, type FormState } from "@/app/admin/actions";
 import { ART, ART_MEANING, LABELS, PAIRINGS, type Post } from "@/lib/content";
-import { loadCaro } from "@/components/CaroRuntime";
 import { ConfirmButton, Flash, Submit } from "./forms";
 
 const SNIPPETS: { label: string; text: string }[] = [
@@ -79,20 +78,6 @@ export function PostEditor({ post, defaultPairing = 0, justCreated = false }: { 
     }, 350);
     return () => clearTimeout(t);
   }, [body, pal.palette]);
-
-  useEffect(() => {
-    const el = previewRef.current;
-    if (!el) return;
-    loadCaro().then((Caro) => {
-      const api = Caro as unknown as { mount: (r: ParentNode) => void; copy: (r: ParentNode) => void };
-      api.mount(el);
-      api.copy(el);
-      el.querySelectorAll("[data-ck-flip]").forEach((f) => f.classList.add("is-flipped"));
-      el.querySelectorAll("[data-ck-orbits]").forEach((n) => {
-        if (!n.querySelector(".ck-orbits")) Caro.orbits(n, { k: 0.7 });
-      });
-    });
-  }, [html, numeral]);
 
   // Save with Cmd/Ctrl+S; warn before leaving with unsaved changes.
   useEffect(() => {
@@ -300,30 +285,25 @@ export function PostEditor({ post, defaultPairing = 0, justCreated = false }: { 
             <span>{pal.name}</span>
           </div>
           <div className={`ck-root ad-preview pal-${pal.palette} hero-${pal.hero}`} ref={previewRef}>
-            <section className="ck-section">
-              <div className="ck-container ck-stack ck-stack--center">
-                <p className="kicker ck-kicker">{label || "Post type"} · Preview</p>
-                {n ? (
-                  <div className="ck-numeral" data-ck-orbits key={n}>
-                    <span className={`${n.length <= 2 ? "hero-xl" : "hero"} ck-hero`}>{n}</span>
-                  </div>
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img className="ck-art ck-art-float" src={`/art/${art}.svg${pal.palette !== "lagoon" ? `?pal=${pal.palette}` : ""}`} alt="" width={300} style={{ marginBottom: 24 }} />
-                )}
-                <h2 className="display ck-head">
-                  {title || "Your headline."}
-                  {titleSec ? (
-                    <>
-                      <br />
-                      <span className="ck-sec">{titleSec}</span>
-                    </>
-                  ) : null}
-                </h2>
-                {excerpt ? <p className="lead ck-lead">{excerpt}</p> : null}
+            <header className="ar-head">
+              <p className="nl-kicker" style={{ marginBottom: 10 }}>{label || "Post type"}</p>
+              <h2 className="nl-h1">
+                {title || "Your headline."}
+                {titleSec ? <span className="nl-sec"> {titleSec}</span> : null}
+              </h2>
+              {excerpt ? <p className="nl-lead">{excerpt}</p> : null}
+              <div className="ar-cover">
+                <span className="nl-thumb" aria-hidden="true">
+                  {n ? (
+                    <span className="nl-thumb__num ck-hero">{n}</span>
+                  ) : (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={`/art/${art}.svg${pal.palette !== "lagoon" ? `?pal=${pal.palette}` : ""}`} alt="" />
+                  )}
+                </span>
               </div>
-            </section>
-            <div dangerouslySetInnerHTML={{ __html: html }} />
+            </header>
+            <div className="ar" dangerouslySetInnerHTML={{ __html: html }} />
           </div>
         </aside>
       </form>

@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { PageShell } from "@/components/site";
-import { Head } from "@/components/caro";
+import { PageShell, SubscribeBox } from "@/components/site";
+import { Avatar } from "@/components/caro";
+import { StoryGrid, Thumb } from "@/components/issues";
 import { getSettings } from "@/lib/settings";
 import { livePostBySlug, relatedPosts, tagList, tagSlug } from "@/lib/posts";
-import { readMinutes } from "@/lib/content";
-import { StoryList } from "@/components/issues";
-import { artUrl, renderWeb } from "@/lib/markdown";
+import { readMinutes, slugPart } from "@/lib/content";
+import { renderWeb } from "@/lib/markdown";
 import { longDate } from "@/lib/format";
 
 type Props = { params: Promise<{ slug: string }> };
@@ -32,51 +32,57 @@ export default async function IssuePage({ params }: Props) {
   const s = getSettings();
   const related = relatedPosts(post, 3);
   const tags = tagList(post);
-  const numeral = post.numeral.trim().slice(0, 4);
 
   return (
-    <PageShell label={post.label} handle={s.handle} palette={post.palette} hero={post.hero}>
+    <PageShell palette={post.palette} hero={post.hero} cta={false}>
       <article>
-        <section className="ck-section ck-section--hero">
-          <div className="ck-container ck-stack ck-stack--center" data-ck-reveal>
-            <p className="kicker ck-kicker ck-fade">
-              {post.label} · {longDate(post.published_at)} · {readMinutes(post)} min read
-            </p>
-            {numeral ? (
-              <div className="ck-numeral" data-ck-orbits>
-                <span className={`${numeral.length <= 2 ? "hero-xl" : "hero"} ck-hero`}>{numeral}</span>
-              </div>
-            ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img className="ck-art ck-art-float ck-hero-art ck-fade" src={artUrl(post.art, post.palette)} alt="" width={440} height={300} />
-            )}
-            <Head as="h1" size="display" first={post.title} second={post.title_sec || undefined} />
-            {post.excerpt ? <p className="lead ck-lead ck-fade">{post.excerpt}</p> : null}
-            {tags.length ? (
-              <p className="meta ck-meta-line ck-fade">
-                {tags.map((t, i) => (
-                  <span key={t}>
-                    {i ? " · " : ""}
-                    <Link href={`/topics/${tagSlug(t)}`}>{t}</Link>
-                  </span>
-                ))}
-              </p>
-            ) : null}
+        <header className="nl-read ar-head">
+          <nav className="ar-crumbs" aria-label="Breadcrumb">
+            <Link href="/issues">Archive</Link>
+            <span aria-hidden="true">/</span>
+            <Link href={`/sections/${slugPart(post.label)}`}>{post.label}</Link>
+          </nav>
+          <h1 className="nl-h1">
+            {post.title}
+            {post.title_sec ? <span className="nl-sec"> {post.title_sec}</span> : null}
+          </h1>
+          {post.excerpt ? <p className="nl-lead">{post.excerpt}</p> : null}
+          <div className="ar-byline">
+            <Avatar />
+            <span>
+              <b>{s.fromName || s.handle}</b> · {longDate(post.published_at)} · {readMinutes(post)} min read
+            </span>
           </div>
-        </section>
+          <div className="ar-cover">
+            <Thumb post={post} eager />
+          </div>
+        </header>
 
-        <div dangerouslySetInnerHTML={{ __html: renderWeb(post.body, post.palette) }} />
+        <div className="nl-read">
+          <div className="ar" dangerouslySetInnerHTML={{ __html: renderWeb(post.body, post.palette) }} />
+          {tags.length ? (
+            <nav className="ar-tags" aria-label="Topics">
+              {tags.map((t) => (
+                <Link key={t} className="ck-chip" href={`/topics/${tagSlug(t)}`}>
+                  {t}
+                </Link>
+              ))}
+            </nav>
+          ) : null}
+          <div className="ar-end">
+            <SubscribeBox palette={post.palette} title="Enjoyed this? Get the next one." />
+          </div>
+        </div>
       </article>
 
       {related.length ? (
-        <section className="ck-section">
-          <div className="ck-container ck-stack" data-ck-reveal>
-            <p className="kicker ck-kicker ck-fade">Read next</p>
-            <Head first="More stories." second="Short and plain." />
-            <div className="ck-fade" style={{ width: "100%" }}>
-              <StoryList posts={related} />
-            </div>
+        <section className="nl-wrap nl-block" aria-labelledby="next">
+          <div className="nl-block__head">
+            <h2 className="nl-h2" id="next">
+              Read next
+            </h2>
           </div>
+          <StoryGrid posts={related} />
         </section>
       ) : null}
     </PageShell>

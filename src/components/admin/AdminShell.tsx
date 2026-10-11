@@ -8,7 +8,7 @@ import { signOut } from "@/app/admin/actions";
 export function AdminShell({ children, nav, handle, label = "Admin" }: { children: ReactNode; nav?: NavItem[]; handle: string; label?: string }) {
   return (
     <div className="ck-root ad-shell pal-lagoon hero-sky">
-      <Sky palette="lagoon" seed={11} />
+      <Sky palette="lagoon" seed={11} fixed />
       <header className="ck-header">
         <div className="ck-header__bar">
           <Link className="ck-me" href="/admin">

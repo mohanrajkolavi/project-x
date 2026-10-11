@@ -1,13 +1,17 @@
 # Newsletter site with admin CMS
 
-A newsletter website and the admin to run it, built on the **Caro Cosmic Keynote** design system
-(black, Montserrat, a vector night sky, hairline rows, one ask: the free newsletter).
+A clean, fast newsletter website and the admin to run it. The look takes its cues from the
+**Caro Cosmic Keynote** design system in `design-system/` (black, Montserrat, signature blue, glass
+line art), tuned for reading.
 
-- **Public site:** a front page that reads like a feed of short stories (latest story first, then
-  more stories with their art and reading time), issue pages with "Read next" stories, the archive with
-  search, sections (one per post type, like Explained or Prompt pack), topics, about, RSS, sitemap.
-  Navigation and search sit in a full-screen menu behind the avatar, as the design system asks.
-  The signup form closes every page, with double opt-in, a welcome email and one-click unsubscribe.
+- **Public site:** a front page with a subscribe hero, the latest story, recent stories and a row
+  per section; issue pages in a narrow reading column with reading time, topics, a subscribe box and
+  "Read next"; an archive with search and section tabs; section and topic pages; about; a subscribe
+  page; RSS and a sitemap. A sticky top nav carries the main sections, search and Subscribe; phones
+  get a full-screen menu.
+- **Fast by default:** pages are server-rendered with no reveal animations or hidden-until-loaded
+  content. The only page script counts views and powers the prompt copy buttons. The night sky is
+  drawn once, after the page is idle, and only behind the home hero.
 - **Admin (`/admin`):** dashboard (audience, traffic, open and click rates, top issues, referrers,
   signup sources), an issue editor with live preview, email sends with preview, test send and
   per-send reports, subscribers (search, add, import, CSV export), outbox, settings and team.
@@ -52,12 +56,10 @@ Issue bodies are Markdown with a few extras that map to the design system compon
 
 | Write | You get |
 | --- | --- |
-| `---` | a new section (one idea per section) |
-| `@center` as a section's first line | a centred section |
+| `---` | a new section, with a hairline between |
 | `#### Kicker` | the small blue line above a headline |
 | `## First line. / Second line.` | a two-line headline, second line muted |
 | `## First. / *Second.*` | the second line in the page's hero finish (once per page) |
-| a paragraph right after a headline | the lead |
 | ` ```rows ` with `Name \| Status \| yes` | hairline rows; `yes` turns the status blue |
 | ` ```steps ` with `[x] Done` or plain lines | numbered or ticked steps |
 | ` ```prompt ` with `[fill-ins]`, then `You get · …` | a copy-ready prompt block |

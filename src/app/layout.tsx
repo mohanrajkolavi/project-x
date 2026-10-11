@@ -22,16 +22,10 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export const viewport: Viewport = { themeColor: "#000000", colorScheme: "dark" };
 
-// Hides reveal blocks until Caro has armed them, so words rise instead of flashing. Falls back after 2.5s.
-const EARLY = `document.documentElement.classList.add('ck-js');setTimeout(function(){document.documentElement.classList.add('ck-late')},2500);`;
-
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   await connection();
   return (
-    <html lang="en" data-theme="black" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: EARLY }} />
-      </head>
+    <html lang="en" data-theme="black">
       <body>
         {children}
         <CaroRuntime />

@@ -4,11 +4,10 @@ import { Marked, type Token, type Tokens } from "marked";
  * Caro markdown: plain Markdown plus a few conventions that map to the design system.
  *
  *   ---                      starts a new section (one idea per section)
- *   @center                  first line of a section: centre it
+ *   @center                  first line of a section (kept for older posts; ignored on the web)
  *   #### Kicker              small blue line above a headline
  *   ## First line. / Second.  two-line headline; the second line is muted
  *   ## First. / *Second.*     second line in the page's hero finish (once per page)
- *   a paragraph after a headline becomes the lead
  *   ```rows    Name | Status | yes
  *   ```steps   [x] Done step / Open step
  *   ```prompt  The prompt with [fill-ins], then "You get · …"
@@ -42,7 +41,7 @@ function inlineMarked(ctx: Ctx) {
         if (ctx.target === "email" && url.startsWith("/")) url = ctx.base + url;
         const ext = /^https?:/i.test(url);
         if (ctx.target === "email") return `<a href="${esc(url)}" style="color:#2997FF;text-decoration:underline">${label}</a>`;
-        return `<a class="ck-inline-link" href="${esc(url)}"${ext ? ' rel="noopener noreferrer" target="_blank"' : ""}>${label}</a>`;
+        return `<a href="${esc(url)}"${ext ? ' rel="noopener noreferrer" target="_blank"' : ""}>${label}</a>`;
       },
       image({ href, text }) {
         if (!SAFE_URL.test(href || "")) return "";
@@ -51,7 +50,7 @@ function inlineMarked(ctx: Ctx) {
         return `<img class="ck-img" src="${esc(src)}" alt="${esc(text)}" loading="lazy">`;
       },
       codespan({ text }) {
-        return ctx.target === "email" ? `<code style="font-family:Menlo,monospace;color:#FFFFFF">${text}</code>` : `<code class="ck-code-inline">${text}</code>`;
+        return ctx.target === "email" ? `<code style="font-family:Menlo,monospace;color:#FFFFFF">${text}</code>` : `<code>${text}</code>`;
       },
     },
   });
@@ -77,13 +76,6 @@ function curly(s: string): string {
 export function artUrl(name: string, palette: string, base = ""): string {
   return `${base}/art/${encodeURIComponent(name)}.svg${palette && palette !== "lagoon" ? `?pal=${encodeURIComponent(palette)}` : ""}`;
 }
-function parseNumber(v: string): { pre: string; num: number; post: string; dec: number } | null {
-  const m = v.match(/^([^\d-]*)(-?[\d,]*\.?\d+)(.*)$/);
-  if (!m) return null;
-  const raw = m[2].replace(/,/g, "");
-  const dec = raw.includes(".") ? raw.split(".")[1].length : 0;
-  return { pre: m[1], num: parseFloat(raw), post: m[3], dec };
-}
 
 // ---------- headline split: "First. / Second."
 function headline(text: string, inline: (s: string) => string): { first: string; second: string; grad: boolean } {
@@ -95,7 +87,7 @@ function headline(text: string, inline: (s: string) => string): { first: string;
   return { first: inline(text.slice(0, i).trim()), second: inline(sec), grad };
 }
 
-// ---------- web blocks
+// ---------- web blocks (an article column; Caro components sized for reading)
 function webFence(tok: Tokens.Code, ctx: Ctx, inline: (s: string) => string): string {
   const lang = (tok.lang || "").trim().toLowerCase();
   const L = lines(tok.text);
@@ -106,15 +98,15 @@ function webFence(tok: Tokens.Code, ctx: Ctx, inline: (s: string) => string): st
         const yes = /^(yes|y|pick|true|\*)$/i.test(flag);
         return `<li class="ck-row${yes ? " is-yes" : ""}"><span class="row-name ck-row__name">${inline(name)}</span><span class="result ck-row__status">${inline(status)}</span></li>`;
       });
-      return `<ul class="ck-rows ck-fade">${items.join("")}</ul>`;
+      return `<ul class="ck-rows ck-rows--ruled">${items.join("")}</ul>`;
     }
     case "steps": {
       const items = L.map((l) => {
         const done = /^\[x\]\s*/i.test(l);
         const t = l.replace(/^\[[ x]\]\s*/i, "");
-        return `<li class="ck-step${done ? " is-done" : ""}"><span class="ck-step__dot"><span data-ck-icon="check" style="display:contents"></span></span><span class="row-name ck-step__text">${inline(t)}</span></li>`;
+        return `<li class="ck-step${done ? " is-done" : ""}"><span class="ck-step__dot">${done ? CHECK : ""}</span><span class="row-name ck-step__text">${inline(t)}</span></li>`;
       });
-      return `<ol class="ck-steps ck-fade">${items.join("")}</ol>`;
+      return `<ol class="ck-steps">${items.join("")}</ol>`;
     }
     case "prompt": {
       let label = "Copy this prompt";
@@ -127,22 +119,17 @@ function webFence(tok: Tokens.Code, ctx: Ctx, inline: (s: string) => string): st
       }
       let text = body.join(" ");
       if (!/^["“]/.test(text)) text = `“${text}”`;
-      return `<div class="ck-prompt ck-fade"><div class="meta ck-prompt__label"><span>${esc(label)}</span><button class="ck-prompt__copy meta" type="button" data-ck-copy><span data-ck-icon="copy" style="display:flex"></span><span>Copy</span></button></div><p class="prompt ck-prompt__text">${fills(inline(curly(text)), ctx)}</p>${result ? `<p class="result ck-result">${inline(result)}</p>` : ""}</div>`;
+      return `<div class="ck-prompt"><div class="meta ck-prompt__label"><span>${esc(label)}</span><button class="ck-prompt__copy meta" type="button" data-ck-copy>${COPY}<span>Copy</span></button></div><p class="prompt ck-prompt__text">${fills(inline(curly(text)), ctx)}</p>${result ? `<p class="result ck-result">${inline(result)}</p>` : ""}</div>`;
     }
     case "stat": {
       const [value = "", head = "", lead = ""] = L;
-      const n = parseNumber(value);
-      const size = value.length <= 2 ? "hero-xl" : value.length <= 4 ? "hero" : "display";
-      const count = n
-        ? ` data-ck-count="${n.num}" data-pre="${esc(n.pre)}" data-post="${esc(n.post)}" data-decimals="${n.dec}"`
-        : "";
-      return `<div class="ck-stack ck-stat">${`<span class="${size} ck-hero ck-stat__num"${count}>${esc(value)}</span>`}${head ? `<p class="headline ck-head" data-ck-words>${inline(head)}</p>` : ""}${lead ? `<p class="lead ck-lead ck-fade">${inline(lead)}</p>` : ""}</div>`;
+      return `<div class="ck-stat"><p class="ck-hero ck-stat__num" style="margin:0">${esc(value)}</p>${head ? `<p class="ar-stat-head">${inline(head)}</p>` : ""}${lead ? `<p class="ar-stat-lead">${inline(lead)}</p>` : ""}</div>`;
     }
     case "meter": {
       return L.map((l) => {
         const [label, value = "", pct = "0"] = cells(l);
         const v = Math.max(0, Math.min(100, parseFloat(pct) || 0));
-        return `<div class="ck-meter ck-fade" style="--v:${v}%"><div class="ck-meter__top"><span class="fine ck-meter__label">${inline(label)}</span><span class="result ck-meter__value">${inline(value)}</span></div><div class="ck-meter__track"><div class="ck-meter__fill"></div></div></div>`;
+        return `<div class="ck-meter" style="--v:${v}%"><div class="ck-meter__top"><span class="fine ck-meter__label">${inline(label)}</span><span class="result ck-meter__value">${inline(value)}</span></div><div class="ck-meter__track"><div class="ck-meter__fill"></div></div></div>`;
       }).join("");
     }
     case "versus": {
@@ -162,68 +149,61 @@ function webFence(tok: Tokens.Code, ctx: Ctx, inline: (s: string) => string): st
           const w = win.toLowerCase();
           return `<div class="ck-versus__row"><span class="result ck-versus__a${w === "a" ? " is-win" : ""}">${inline(va)}</span><span class="fine ck-versus__crit">${inline(crit)}</span><span class="result ck-versus__b${w === "b" ? " is-win" : ""}">${inline(vb)}</span></div>`;
         });
-      return `<div class="ck-versus ck-fade"><div class="ck-versus__names"><span class="title">${inline(a)}</span><span class="title">${inline(b)}</span></div>${rows.join("")}${verdict ? `<p class="result ck-versus__verdict">${inline(verdict)}</p>` : ""}</div>`;
+      return `<div class="ck-versus"><div class="ck-versus__names"><span class="title">${inline(a)}</span><span class="title">${inline(b)}</span></div>${rows.join("")}${verdict ? `<p class="result ck-versus__verdict">${inline(verdict)}</p>` : ""}</div>`;
     }
     case "flip": {
       const get = (k: string) => (L.find((l) => l.toLowerCase().startsWith(k + ":")) || "").slice(k.length + 1).trim();
       const kicker = get("kicker") || "Myth";
       const factKicker = get("factkicker") || (kicker.toLowerCase().startsWith("mistake") ? kicker.replace(/mistake/i, "Fix") : kicker.replace(/myth/i, "Fact"));
-      return `<div class="ck-flip" data-ck-flip><p class="kicker ck-kicker">${esc(kicker)}</p><h3 class="title ck-head"><span class="ck-strike">${inline(get("myth") || get("mistake"))}</span></h3><p class="kicker ck-flip__fact-kicker">${esc(factKicker)}</p><p class="title ck-grad ck-head">${inline(get("fact") || get("fix"))}</p>${get("proof") ? `<p class="lead ck-lead">${inline(get("proof"))}</p>` : ""}</div>`;
+      return `<div class="ck-flip is-flipped"><p class="kicker ck-kicker">${esc(kicker)}</p><p class="title ck-head"><span class="ck-strike">${inline(get("myth") || get("mistake"))}</span></p><p class="kicker ck-flip__fact-kicker">${esc(factKicker)}</p><p class="title ck-grad ck-head">${inline(get("fact") || get("fix"))}</p>${get("proof") ? `<p class="lead ck-lead">${inline(get("proof"))}</p>` : ""}</div>`;
     }
     case "art": {
       const [name = "bulb", width = "360"] = (L[0] || "bulb").split(/\s+/);
       const w = Math.max(120, Math.min(640, parseInt(width, 10) || 360));
-      return `<img class="ck-art ck-art-float ck-fade ck-art--inline" src="${artUrl(name, ctx.palette)}" alt="" width="${w}" loading="lazy">`;
+      return `<img class="ar-art" src="${artUrl(name, ctx.palette)}" alt="" width="${w}" style="--w:${w}px" loading="lazy" decoding="async">`;
     }
-    case "numeral": {
-      const v = (L[0] || "").slice(0, 4);
-      return `<div class="ck-numeral" data-ck-orbits><span class="${v.length <= 2 ? "hero-xl" : "hero"} ck-hero">${esc(v)}</span></div>`;
-    }
+    case "numeral":
+      return `<p class="ar-numeral ck-hero">${esc((L[0] || "").slice(0, 4))}</p>`;
     default:
-      return `<pre class="ck-code ck-fade"><code>${esc(tok.text)}</code></pre>`;
+      return `<pre><code>${esc(tok.text)}</code></pre>`;
   }
 }
+const CHECK = '<svg viewBox="0 0 44 44" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 22.5l6 6 12-13"></path></svg>';
+const COPY = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8.5" y="8.5" width="11" height="11" rx="2.5"></rect><path d="M15.5 8.5V6.75a2.25 2.25 0 0 0-2.25-2.25h-6.5A2.25 2.25 0 0 0 4.5 6.75v6.5a2.25 2.25 0 0 0 2.25 2.25H8.5"></path></svg>';
 
-function webToken(tok: Token, ctx: Ctx, inline: (s: string) => string, prev: Token | undefined): string {
+function webToken(tok: Token, ctx: Ctx, inline: (s: string) => string): string {
   switch (tok.type) {
     case "heading": {
       const t = tok as Tokens.Heading;
-      if (t.depth >= 4) return `<p class="kicker ck-kicker ck-fade">${inline(t.text)}</p>`;
-      if (t.depth === 3) return `<h3 class="title ck-head ck-h3" data-ck-words>${inline(t.text)}</h3>`;
+      if (t.depth >= 4) return `<p class="ar-kicker">${inline(t.text)}</p>`;
+      if (t.depth === 3) return `<h3>${inline(t.text)}</h3>`;
       const h = headline(t.text, inline);
-      const cls = t.depth === 1 ? "display" : "headline";
-      const sec = h.second ? `<br><span class="${h.grad ? "ck-grad" : "ck-sec"}">${h.second}</span>` : "";
-      return `<h2 class="${cls} ck-head" data-ck-words>${h.first}${sec}</h2>`;
+      return `<h2>${h.first}${h.second ? ` <span class="${h.grad ? "nl-grad" : "ar-sec"}">${h.second}</span>` : ""}</h2>`;
     }
-    case "paragraph": {
-      const t = tok as Tokens.Paragraph;
-      const lead = prev?.type === "heading" && (prev as Tokens.Heading).depth <= 2;
-      return lead ? `<p class="lead ck-lead ck-fade">${inline(t.text)}</p>` : `<p class="body ck-text ck-fade">${inline(t.text)}</p>`;
-    }
+    case "paragraph":
+      return `<p>${inline((tok as Tokens.Paragraph).text)}</p>`;
     case "list": {
       const t = tok as Tokens.List;
       const items = t.items.map((i) => `<li>${inline(i.text.replace(/\n+/g, " "))}</li>`).join("");
-      return t.ordered ? `<ol class="body ck-list ck-list--ordered ck-fade">${items}</ol>` : `<ul class="body ck-list ck-fade">${items}</ul>`;
+      return t.ordered ? `<ol>${items}</ol>` : `<ul>${items}</ul>`;
     }
-    case "blockquote": {
-      const t = tok as Tokens.Blockquote;
-      return `<blockquote class="lead ck-quote ck-fade">${inline(t.text.replace(/\n+/g, " "))}</blockquote>`;
-    }
+    case "blockquote":
+      return `<blockquote>${inline((tok as Tokens.Blockquote).text.replace(/\n+/g, " "))}</blockquote>`;
     case "code":
       return webFence(tok as Tokens.Code, ctx, inline);
     case "table": {
       const t = tok as Tokens.Table;
       const head = t.header.map((c) => `<th>${inline(c.text)}</th>`).join("");
       const body = t.rows.map((r) => `<tr>${r.map((c) => `<td>${inline(c.text)}</td>`).join("")}</tr>`).join("");
-      return `<div class="ck-table-wrap ck-fade"><table class="ck-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+      return `<div class="ck-table-wrap"><table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
     }
     case "html":
-      return `<p class="body ck-text">${esc((tok as Tokens.HTML).text)}</p>`;
+      return `<p>${esc((tok as Tokens.HTML).text)}</p>`;
     case "space":
     case "hr":
       return "";
     default:
-      return "text" in tok && typeof tok.text === "string" ? `<p class="body ck-text ck-fade">${inline(tok.text)}</p>` : "";
+      return "text" in tok && typeof tok.text === "string" ? `<p>${inline(tok.text)}</p>` : "";
   }
 }
 
@@ -362,19 +342,16 @@ function renderSection(src: string, ctx: Ctx): string {
   const inline = inlineMarked(ctx);
   const lexer = new Marked({ gfm: true });
   const toks = lexer.lexer(src).filter((t) => t.type !== "space");
-  const fn = ctx.target === "web" ? webToken : emailToken;
-  return toks.map((t, i) => fn(t, ctx, inline, toks[i - 1])).join("");
+  if (ctx.target === "web") return toks.map((t) => webToken(t, ctx, inline)).join("");
+  return toks.map((t, i) => emailToken(t, ctx, inline, toks[i - 1])).join("");
 }
 
-/** Article body as a series of Caro sections. */
+/** Article body for the web: one reading column, a hairline between sections. */
 export function renderWeb(md: string, palette = "lagoon"): string {
   const ctx: Ctx = { target: "web", palette, base: "" };
   return splitSections(md)
-    .map(
-      (s) =>
-        `<section class="ck-section ck-article"><div class="ck-container ck-stack${s.center ? " ck-stack--center" : ""}" data-ck-reveal>${renderSection(s.src, ctx)}</div></section>`,
-    )
-    .join("");
+    .map((sec) => renderSection(sec.src, ctx))
+    .join('<hr class="ar-hr">');
 }
 
 /** Article body for email: inline styles, hairlines between sections. */

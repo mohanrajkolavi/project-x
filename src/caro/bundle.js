@@ -60,7 +60,7 @@
   function seeded(seed) { var s = seed % 2147483647; if (s <= 0) s += 2147483646; return function () { s = s * 16807 % 2147483647; return (s - 1) / 2147483646; }; }
 
   // ---------- the night sky (sky_final.py, as a canvas)
-  // Caro.sky(canvas, {seed, density, drift}) -> {destroy()}
+  // Caro.sky(canvas, {seed, density, drift, still}) -> {destroy()}; still draws one frame and stops (no animation loop)
   function sky(canvas, opts) {
     opts = opts || {};
     var ctx = canvas.getContext('2d'), layer = document.createElement('canvas'), lctx = layer.getContext('2d');
@@ -148,7 +148,7 @@
     }
     function frame(now) {
       if (!alive) return;
-      var t = (now - t0) / 1000, still = reduce(), off = still ? 0 : (t * drift) % W;
+      var t = (now - t0) / 1000, still = reduce() || !!opts.still, off = still ? 0 : (t * drift) % W;
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.drawImage(layer, -off * dpr, 0); if (off) ctx.drawImage(layer, (W - off) * dpr, 0);
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);

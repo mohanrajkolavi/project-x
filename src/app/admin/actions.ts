@@ -124,7 +124,7 @@ export async function removePost(f: FormData) {
 
 export async function previewBody(body: string, palette: string): Promise<string> {
   await requireUser();
-  return renderWeb(String(body).slice(0, 200_000), palette).replace(/ data-ck-reveal/g, "");
+  return renderWeb(String(body).slice(0, 200_000), palette);
 }
 
 // ---------- sends

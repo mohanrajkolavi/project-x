@@ -1,126 +1,89 @@
 import Link from "next/link";
 import { PageShell } from "@/components/site";
-import { Head, Icon, PlanetButton } from "@/components/caro";
-import { StoryList } from "@/components/issues";
-import { getSettings } from "@/lib/settings";
-import { livePosts, topics, liveCount, sections } from "@/lib/posts";
-import { readMinutes } from "@/lib/content";
+import { Icon } from "@/components/caro";
+import { Sky } from "@/components/CaroRuntime";
+import { SubscribeForm } from "@/components/SubscribeForm";
+import { FeaturedStory, StoryGrid } from "@/components/issues";
+import { livePosts, liveCount, sections } from "@/lib/posts";
+import { subscriberCounts } from "@/lib/subscribers";
 import { artUrl } from "@/lib/markdown";
-import { shortDate } from "@/lib/format";
 
 export default function Home() {
-  const s = getSettings();
-  const [latest, ...rest] = livePosts({ limit: 9 });
-  const more = rest.slice(0, 8);
-  const tags = topics().slice(0, 12);
-  const secs = sections();
+  const [latest, ...rest] = livePosts({ limit: 7 });
+  const recent = rest.slice(0, 6);
+  const shown = new Set([latest?.id, ...recent.map((p) => p.id)]);
   const count = liveCount();
+  const readers = subscriberCounts().active;
+  // One row per section, with stories not already shown above.
+  const bySection = sections()
+    .map((sec) => ({ ...sec, posts: livePosts({ section: sec.slug }).filter((p) => !shown.has(p.id)).slice(0, 3) }))
+    .filter((sec) => sec.posts.length)
+    .slice(0, 3);
 
   return (
-    <PageShell label="Weekly" handle={s.handle} palette="lagoon" hero="sky">
-      {/* Hero: the question the newsletter answers */}
-      <section className="ck-section ck-section--hero">
-        <div className="ck-container ck-stack ck-stack--center" data-ck-reveal>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img className="ck-art ck-art-float ck-hero-art ck-fade" src={artUrl("comet", "lagoon")} alt="" width={440} height={300} />
-          <p className="kicker ck-kicker ck-fade">Free newsletter · Every week</p>
-          <Head as="h1" size="display" first="What changed" second="in AI this week?" grad />
-          <p className="lead ck-lead ck-fade">AI news, tech, prompts and links to skills. Short reads in plain words, one idea at a time.</p>
-          <div className="ck-actions ck-fade" style={{ justifyContent: "center" }}>
-            {latest ? (
-              <Link className="ck-next meta" href={`/issues/${latest.slug}`}>
-                <span>Read the latest</span>
-                <PlanetButton />
-              </Link>
-            ) : null}
-            <a className="ck-link" href="#newsletter">
-              Get it by email <Icon name="down" />
-            </a>
+    <PageShell cta={false}>
+      <section className="nl-hero">
+        <Sky palette="lagoon" />
+        <div className="nl-wrap nl-hero__grid">
+          <div className="nl-hero__copy">
+            <p className="nl-kicker">Free newsletter · Every week</p>
+            <h1 className="nl-h1">
+              Stay ahead <span className="nl-grad">of AI.</span>
+            </h1>
+            <p className="nl-lead">
+              AI news, tech, prompts and links to skills. In your inbox every week.
+              {readers >= 50 ? ` Join ${readers.toLocaleString("en-US")} readers.` : ""}
+            </p>
+            <div className="nl-hero__form">
+              <SubscribeForm id="hero" />
+            </div>
+          </div>
+          <div className="nl-hero__art">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={artUrl("envelope", "lagoon")} alt="" width={420} height={211} fetchPriority="high" />
           </div>
         </div>
       </section>
 
       {latest ? (
-        <section className="ck-section">
-          <div className="ck-container ck-split ck-split--art-left" data-ck-reveal>
-            <div className="ck-split__art ck-fade">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img className="ck-art" src={artUrl(latest.art, latest.palette)} alt="" width={400} height={300} style={{ opacity: 0.9 }} />
-            </div>
-            <div className="ck-stack">
-              <p className="kicker ck-kicker ck-fade">
-                Latest · {latest.label} · {shortDate(latest.published_at)} · {readMinutes(latest)} min read
-              </p>
-              <Head first={latest.title} second={latest.title_sec || undefined} />
-              {latest.excerpt ? <p className="lead ck-lead ck-fade">{latest.excerpt}</p> : null}
-              <div className="ck-actions ck-fade">
-                <Link className="ck-link" href={`/issues/${latest.slug}`}>
-                  Read it in {readMinutes(latest)} {readMinutes(latest) === 1 ? "minute" : "minutes"} <Icon name="arrow" />
-                </Link>
-              </div>
-            </div>
-          </div>
-        </section>
+        <div className="nl-wrap nl-block">
+          <FeaturedStory post={latest} />
+        </div>
       ) : (
-        <section className="ck-section">
-          <div className="ck-container ck-stack" data-ck-reveal>
-            <p className="kicker ck-kicker ck-fade">Coming soon</p>
-            <Head first="The first issue" second="lands this week." />
-            <p className="lead ck-lead ck-fade">Join below and it reaches you the moment it ships.</p>
-          </div>
-        </section>
+        <div className="nl-wrap nl-block">
+          <p className="nl-lead">The first issue lands soon. Subscribe above and it reaches you the moment it ships.</p>
+        </div>
       )}
 
-      {more.length ? (
-        <section className="ck-section">
-          <div className="ck-container ck-stack" data-ck-reveal>
-            <p className="kicker ck-kicker ck-fade">More stories</p>
-            <Head first="Catch up." second="One story at a time." />
-            <div className="ck-fade" style={{ width: "100%" }}>
-              <StoryList posts={more} />
-            </div>
-            {count > more.length + 1 ? (
-              <div className="ck-actions ck-fade">
-                <Link className="ck-link" href="/issues">
-                  See all {count} issues <Icon name="arrow" />
-                </Link>
-              </div>
+      {recent.length ? (
+        <section className="nl-wrap nl-block" aria-labelledby="recent">
+          <div className="nl-block__head">
+            <h2 className="nl-h2" id="recent">
+              Recent stories
+            </h2>
+            {count > recent.length + 1 ? (
+              <Link className="nl-link" href="/issues">
+                All {count} issues <Icon name="arrow" />
+              </Link>
             ) : null}
           </div>
+          <StoryGrid posts={recent} />
         </section>
       ) : null}
 
-      {secs.length ? (
-        <section className="ck-section">
-          <div className="ck-container ck-stack" data-ck-reveal>
-            <p className="kicker ck-kicker ck-fade">Sections</p>
-            <Head first="Pick by the job." second="Start where you are." />
-            <ul className="ck-rows ck-rows--links ck-fade">
-              {secs.map((t) => (
-                <li key={t.slug}>
-                  <Link className="ck-row-link" href={`/sections/${t.slug}`}>
-                    <span className="ck-row is-yes">
-                      <span className="row-name ck-row__name">{t.name}</span>
-                      <span className="result ck-row__status">
-                        {t.count} {t.count === 1 ? "issue" : "issues"}
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-            </ul>
-            {tags.length ? (
-              <nav className="ck-filters ck-fade" aria-label="Topics" style={{ marginTop: 40 }}>
-                {tags.map((t) => (
-                  <Link key={t.slug} className="ck-chip" href={`/topics/${t.slug}`}>
-                    {t.name}
-                  </Link>
-                ))}
-              </nav>
-            ) : null}
+      {bySection.map((sec) => (
+        <section key={sec.slug} className="nl-wrap nl-block" aria-labelledby={`sec-${sec.slug}`}>
+          <div className="nl-block__head">
+            <h2 className="nl-h2" id={`sec-${sec.slug}`}>
+              {sec.name}
+            </h2>
+            <Link className="nl-link" href={`/sections/${sec.slug}`}>
+              See all {sec.count} <Icon name="arrow" />
+            </Link>
           </div>
+          <StoryGrid posts={sec.posts} />
         </section>
-      ) : null}
+      ))}
     </PageShell>
   );
 }

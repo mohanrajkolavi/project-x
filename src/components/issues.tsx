@@ -3,49 +3,88 @@ import { readMinutes, type Post } from "@/lib/content";
 import { shortDate } from "@/lib/format";
 import { artUrl } from "@/lib/markdown";
 
-const meta = (p: Post, date = true) => [p.label, date ? shortDate(p.published_at) : "", `${readMinutes(p)} min read`].filter(Boolean).join(" · ");
+export const storyMeta = (p: Post) => `${shortDate(p.published_at)} · ${readMinutes(p)} min read`;
 
-/** Hairline rows of issues: kicker, two-line title, date, optional excerpt. */
-export function IssueList({ posts, excerpts = false, className = "" }: { posts: Post[]; excerpts?: boolean; className?: string }) {
+/** The post's art (or its hero number) on a faint surface tinted by its palette. */
+export function Thumb({ post, eager = false }: { post: Post; eager?: boolean }) {
+  const n = post.numeral.trim().slice(0, 4);
   return (
-    <ul className={`ck-issues ${className}`}>
+    <span className={`nl-thumb pal-${post.palette} hero-${post.hero}`} aria-hidden="true">
+      {n ? (
+        <span className="nl-thumb__num ck-hero">{n}</span>
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={artUrl(post.art, post.palette)} alt="" loading={eager ? "eager" : "lazy"} decoding="async" />
+      )}
+    </span>
+  );
+}
+
+function Title({ post }: { post: Post }) {
+  return (
+    <>
+      {post.title}
+      {post.title_sec ? <span className="nl-sec"> {post.title_sec}</span> : null}
+    </>
+  );
+}
+
+export function StoryCard({ post }: { post: Post }) {
+  return (
+    <Link className="nl-card" href={`/issues/${post.slug}`}>
+      <Thumb post={post} />
+      <span className="nl-kicker">{post.label}</span>
+      <h3 className="nl-card__title">
+        <Title post={post} />
+      </h3>
+      {post.excerpt ? <p className="nl-card__excerpt">{post.excerpt}</p> : null}
+      <span className="nl-meta nl-card__meta">{storyMeta(post)}</span>
+    </Link>
+  );
+}
+
+export function StoryGrid({ posts }: { posts: Post[] }) {
+  return (
+    <ul className="nl-grid">
       {posts.map((p) => (
-        <li key={p.id} className="ck-issue">
-          <Link className="ck-issue__link" href={`/issues/${p.slug}`}>
-            <p className="kicker ck-issue__kicker">{meta(p, false)}</p>
-            <h3 className="row-name ck-issue__title">
-              {p.title} {p.title_sec ? <span className="ck-sec">{p.title_sec}</span> : null}
-            </h3>
-            <span className="meta ck-issue__date">{shortDate(p.published_at)}</span>
-            {excerpts && p.excerpt ? <p className="fine ck-issue__excerpt">{p.excerpt}</p> : null}
-          </Link>
+        <li key={p.id}>
+          <StoryCard post={p} />
         </li>
       ))}
     </ul>
   );
 }
 
-/** The front-page feed: each story with its art beside the words, on hairlines. */
-export function StoryList({ posts, className = "" }: { posts: Post[]; className?: string }) {
+export function FeaturedStory({ post }: { post: Post }) {
   return (
-    <ul className={`ck-stories ${className}`}>
+    <Link className="nl-feature" href={`/issues/${post.slug}`}>
+      <Thumb post={post} eager />
+      <span className="nl-feature__copy">
+        <span className="nl-kicker">Latest · {post.label}</span>
+        <h2 className="nl-feature__title">
+          <Title post={post} />
+        </h2>
+        {post.excerpt ? <span className="nl-lead">{post.excerpt}</span> : null}
+        <span className="nl-meta">{storyMeta(post)}</span>
+      </span>
+    </Link>
+  );
+}
+
+/** Compact rows for the archive: title, section, date and reading time. */
+export function StoryRows({ posts, excerpts = false }: { posts: Post[]; excerpts?: boolean }) {
+  return (
+    <ul className="nl-list">
       {posts.map((p) => (
-        <li key={p.id} className="ck-story">
-          <Link className="ck-story__link" href={`/issues/${p.slug}`}>
-            <span className="ck-story__art" aria-hidden="true">
-              {p.numeral.trim() ? (
-                <span className={`ck-hero ck-story__num pal-${p.palette} hero-${p.hero}`}>{p.numeral.trim().slice(0, 4)}</span>
-              ) : (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img src={artUrl(p.art, p.palette)} alt="" loading="lazy" />
-              )}
-            </span>
-            <span className="ck-story__words">
-              <span className="kicker ck-story__kicker">{meta(p)}</span>
-              <span className="title ck-story__title">
-                {p.title} {p.title_sec ? <span className="ck-sec">{p.title_sec}</span> : null}
-              </span>
-              {p.excerpt ? <span className="body ck-story__excerpt">{p.excerpt}</span> : null}
+        <li key={p.id}>
+          <Link className="nl-row" href={`/issues/${p.slug}`}>
+            <h3 className="nl-row__title">
+              <Title post={p} />
+            </h3>
+            <span className="nl-row__aside">{storyMeta(p)}</span>
+            <span className="nl-row__sub">
+              <span style={{ color: "var(--sig-text)" }}>{p.label}</span>
+              {excerpts && p.excerpt ? ` · ${p.excerpt}` : ""}
             </span>
           </Link>
         </li>

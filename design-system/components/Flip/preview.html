@@ -1,0 +1,19 @@
+<!-- @dsCard group="Content" height=420 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><link rel="stylesheet" href="../../tokens.css"><link rel="stylesheet" href="../bundle.css"><script src="../bundle.js"></script><title>Flip preview</title>
+<style>html,body{margin:0} body{box-sizing:border-box;min-height:100vh;padding:28px 32px}</style>
+</head>
+<body class="ck-root pal-lagoon hero-sky">
+<section class="ck-flip" data-ck-reveal data-ck-flip>
+  <p class="kicker ck-kicker ck-fade">Myth 1</p>
+  <h2 class="title ck-head"><span class="ck-strike">A reel is just slides with transitions.</span></h2>
+  <p class="kicker ck-flip__fact-kicker ck-fade">Fact</p>
+  <p class="title ck-grad ck-head" style="margin:0;padding-bottom:.08em">A reel is one continuous scene.</p>
+  <p class="lead ck-lead ck-fade" style="max-width:30em">Every handoff is a change: things lift away, push through or fly into place.</p>
+</section>
+<script>
+Caro.init(document); setInterval(function(){var f=document.querySelector(".ck-flip");f.classList.toggle("is-flipped")},3200);
+</script>
+</body>
+</html>

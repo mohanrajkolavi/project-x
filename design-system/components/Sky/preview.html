@@ -1,0 +1,19 @@
+<!-- @dsCard group="Background" height=380 -->
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><link rel="stylesheet" href="../../tokens.css"><link rel="stylesheet" href="../bundle.css"><script src="../bundle.js"></script><title>Sky preview</title>
+<style>html,body{margin:0} body{box-sizing:border-box;min-height:100vh;padding:28px 32px}</style>
+</head>
+<body class="ck-root pal-lagoon hero-sky">
+<div style="position:relative;height:340px;overflow:hidden;margin:-28px -32px">
+  <canvas class="ck-sky ck-sky--contained" id="sky" aria-hidden="true"></canvas>
+  <div style="position:relative;z-index:1;height:100%;display:flex;flex-direction:column;justify-content:center;padding:0 32px">
+    <p class="kicker ck-kicker">The sky</p>
+    <h2 class="headline ck-head">Quiet stars.<br><span class="ck-sec">Text always wins.</span></h2>
+  </div>
+</div>
+<script>
+Caro.init(document); Caro.sky(document.getElementById("sky"), {drift: 6});
+</script>
+</body>
+</html>

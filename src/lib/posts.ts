@@ -1,7 +1,7 @@
 import { db, sqlDate } from "./db";
 
 export * from "./content";
-import type { Post } from "./content";
+import { slugPart, type Post } from "./content";
 
 const LIVE = "status = 'published' AND published_at <= datetime('now')";
 
@@ -19,7 +19,7 @@ export function tagList(p: Pick<Post, "tags">): string[] {
 }
 
 export function tagSlug(t: string): string {
-  return t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  return slugPart(t);
 }
 
 export function slugify(s: string): string {
@@ -42,7 +42,7 @@ export function uniqueSlug(base: string, exceptId?: number): string {
 }
 
 // ---------- public queries
-export function livePosts(opts: { limit?: number; offset?: number; q?: string; tag?: string } = {}): Post[] {
+export function livePosts(opts: { limit?: number; offset?: number; q?: string; tag?: string; section?: string } = {}): Post[] {
   const where = [LIVE];
   const args: (string | number)[] = [];
   if (opts.q) {
@@ -54,6 +54,7 @@ export function livePosts(opts: { limit?: number; offset?: number; q?: string; t
     .prepare(`SELECT * FROM posts WHERE ${where.join(" AND ")} ORDER BY published_at DESC`)
     .all(...args) as Post[];
   if (opts.tag) rows = rows.filter((p) => tagList(p).some((t) => tagSlug(t) === opts.tag));
+  if (opts.section) rows = rows.filter((p) => slugPart(p.label) === opts.section);
   const start = opts.offset ?? 0;
   return opts.limit ? rows.slice(start, start + opts.limit) : rows.slice(start);
 }
@@ -77,6 +78,31 @@ export function topics(): { name: string; slug: string; count: number }[] {
     }
   }
   return [...map.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+/** Post types in use, as sections of the site ("Explained", "Prompt pack"…). */
+export function sections(): { name: string; slug: string; count: number }[] {
+  const map = new Map<string, { name: string; slug: string; count: number }>();
+  for (const p of livePosts()) {
+    const slug = slugPart(p.label);
+    if (!slug) continue;
+    const cur = map.get(slug) || { name: p.label, slug, count: 0 };
+    cur.count++;
+    map.set(slug, cur);
+  }
+  return [...map.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
+}
+
+/** Stories to read next: shared topics first, then the newest. */
+export function relatedPosts(p: Post, n = 3): Post[] {
+  const mine = new Set(tagList(p).map(tagSlug));
+  const others = livePosts().filter((x) => x.id !== p.id);
+  const score = (x: Post) => tagList(x).filter((t) => mine.has(tagSlug(t))).length;
+  return others
+    .map((x, i) => ({ x, s: score(x), i }))
+    .sort((a, b) => b.s - a.s || a.i - b.i)
+    .slice(0, n)
+    .map((r) => r.x);
 }
 
 export function neighbours(p: Post): { newer: Post | null; older: Post | null } {

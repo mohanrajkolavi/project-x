@@ -2,7 +2,7 @@ import nodemailer, { type Transporter } from "nodemailer";
 import { db } from "./db";
 import { getSettings, baseUrl, type Settings } from "./settings";
 import { esc, renderEmail, renderText } from "./markdown";
-import type { Post } from "./posts";
+import { readMinutes, type Post } from "./content";
 
 export type Mail = { to: string; subject: string; html: string; text: string; kind: string; headers?: Record<string, string> };
 
@@ -106,7 +106,7 @@ export function issueEmail(post: Post, opts: { subject: string; preheader: strin
   const url = `${base}/issues/${post.slug}`;
   const unsub = opts.token ? `${base}/unsubscribe?token=${encodeURIComponent(opts.token)}` : `${base}/unsubscribe`;
   const oneClick = opts.token ? `${base}/api/unsubscribe?token=${encodeURIComponent(opts.token)}` : unsub;
-  let content = `<p style="${FONT}margin:0;color:#2997FF;font-size:15px;font-weight:600">${esc(post.label)}</p>
+  let content = `<p style="${FONT}margin:0;color:#2997FF;font-size:15px;font-weight:600">${esc(post.label)} · ${readMinutes(post)} min read</p>
 <h1 style="${FONT}margin:10px 0 0;color:#FFFFFF;font-size:40px;line-height:1.04;font-weight:700;letter-spacing:-0.04em">${esc(post.title)}${post.title_sec ? `<br><span style="color:#86868B">${esc(post.title_sec)}</span>` : ""}</h1>
 ${post.excerpt ? `<p style="${FONT}margin:18px 0 32px;color:rgba(255,255,255,0.72);font-size:19px;line-height:1.5;font-weight:500">${esc(post.excerpt)}</p>` : `<div style="height:32px"></div>`}
 ${renderEmail(post.body, base, post.palette)}

@@ -3,7 +3,10 @@
 A newsletter website and the admin to run it, built on the **Caro Cosmic Keynote** design system
 (black, Montserrat, a vector night sky, hairline rows, one ask: the free newsletter).
 
-- **Public site:** home, issue pages, the archive with search, topics, about, RSS, sitemap.
+- **Public site:** a front page that reads like a feed of short stories (latest story first, then
+  more stories with their art and reading time), issue pages with "Read next" stories, the archive with
+  search, sections (one per post type, like Explained or Prompt pack), topics, about, RSS, sitemap.
+  Navigation and search sit in a full-screen menu behind the avatar, as the design system asks.
   The signup form closes every page, with double opt-in, a welcome email and one-click unsubscribe.
 - **Admin (`/admin`):** dashboard (audience, traffic, open and click rates, top issues, referrers,
   signup sources), an issue editor with live preview, email sends with preview, test send and

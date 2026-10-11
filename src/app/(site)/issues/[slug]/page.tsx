@@ -4,7 +4,9 @@ import { notFound } from "next/navigation";
 import { PageShell } from "@/components/site";
 import { Head } from "@/components/caro";
 import { getSettings } from "@/lib/settings";
-import { livePostBySlug, neighbours, tagList, tagSlug } from "@/lib/posts";
+import { livePostBySlug, relatedPosts, tagList, tagSlug } from "@/lib/posts";
+import { readMinutes } from "@/lib/content";
+import { StoryList } from "@/components/issues";
 import { artUrl, renderWeb } from "@/lib/markdown";
 import { longDate } from "@/lib/format";
 
@@ -28,7 +30,7 @@ export default async function IssuePage({ params }: Props) {
   const post = livePostBySlug(slug);
   if (!post) notFound();
   const s = getSettings();
-  const { newer, older } = neighbours(post);
+  const related = relatedPosts(post, 3);
   const tags = tagList(post);
   const numeral = post.numeral.trim().slice(0, 4);
 
@@ -38,7 +40,7 @@ export default async function IssuePage({ params }: Props) {
         <section className="ck-section ck-section--hero">
           <div className="ck-container ck-stack ck-stack--center" data-ck-reveal>
             <p className="kicker ck-kicker ck-fade">
-              {post.label} · {longDate(post.published_at)}
+              {post.label} · {longDate(post.published_at)} · {readMinutes(post)} min read
             </p>
             {numeral ? (
               <div className="ck-numeral" data-ck-orbits>
@@ -66,24 +68,14 @@ export default async function IssuePage({ params }: Props) {
         <div dangerouslySetInnerHTML={{ __html: renderWeb(post.body, post.palette) }} />
       </article>
 
-      {newer || older ? (
+      {related.length ? (
         <section className="ck-section">
           <div className="ck-container ck-stack" data-ck-reveal>
-            <p className="kicker ck-kicker ck-fade">Keep reading</p>
-            <nav className="ck-nextprev ck-fade" aria-label="More issues">
-              {older ? (
-                <Link href={`/issues/${older.slug}`}>
-                  <p className="kicker ck-kicker">Previous</p>
-                  <p className="title" style={{ margin: 0 }}>{older.title}</p>
-                </Link>
-              ) : null}
-              {newer ? (
-                <Link href={`/issues/${newer.slug}`}>
-                  <p className="kicker ck-kicker">Next</p>
-                  <p className="title" style={{ margin: 0 }}>{newer.title}</p>
-                </Link>
-              ) : null}
-            </nav>
+            <p className="kicker ck-kicker ck-fade">Read next</p>
+            <Head first="More stories." second="Short and plain." />
+            <div className="ck-fade" style={{ width: "100%" }}>
+              <StoryList posts={related} />
+            </div>
           </div>
         </section>
       ) : null}

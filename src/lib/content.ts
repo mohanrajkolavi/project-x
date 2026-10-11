@@ -47,3 +47,14 @@ export const PAIRINGS: { palette: string; hero: string; name: string }[] = [
 ];
 
 export const LABELS = ["Explained", "Top 10", "How to", "Prompt pack", "Weekly AI Wrap", "Compared", "New launch", "Myths"];
+
+/** URL-safe part made from a label or topic name. */
+export function slugPart(t: string): string {
+  return t.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+}
+
+/** Minutes to read at about 200 words a minute, never less than 1. */
+export function readMinutes(p: Pick<Post, "body" | "excerpt">): number {
+  const words = `${p.excerpt} ${p.body}`.replace(/```\w*|[#>*|`\-\[\]]/g, " ").split(/\s+/).filter(Boolean).length;
+  return Math.max(1, Math.round(words / 200));
+}

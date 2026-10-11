@@ -3,16 +3,25 @@ import type { ReactNode } from "react";
 import { Avatar, Head, Webb } from "./caro";
 import { Sky } from "./CaroRuntime";
 import { SubscribeForm } from "./SubscribeForm";
+import { SiteMenu } from "./SiteMenu";
 import { artUrl } from "@/lib/markdown";
+import { sections } from "@/lib/posts";
 
 export function SiteHeader({ label, handle }: { label: string; handle: string }) {
   return (
     <header className="ck-header">
       <div className="ck-header__bar">
-        <Link className="ck-me" href="/" aria-label={`${handle} home`}>
-          <Avatar />
-          <span className="meta ck-meta-text">{handle}</span>
-        </Link>
+        <SiteMenu
+          avatar={<Avatar />}
+          handle={handle}
+          main={[
+            { href: "/", label: "Home" },
+            { href: "/issues", label: "Every issue" },
+            { href: "/topics", label: "Topics" },
+            { href: "/about", label: "About" },
+          ]}
+          sections={sections().map((x) => ({ href: `/sections/${x.slug}`, label: x.name, note: `${x.count} ${x.count === 1 ? "issue" : "issues"}` }))}
+        />
         <div className="ck-series">
           <Webb />
           <span className="meta ck-meta-text">{label}</span>
